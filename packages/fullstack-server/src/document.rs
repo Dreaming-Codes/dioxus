@@ -18,6 +18,7 @@ use std::sync::LazyLock;
 static RENDERER: LazyLock<RwLock<Renderer>> = LazyLock::new(|| RwLock::new(Renderer::new()));
 
 /// Reset the static renderer to a fresh state, clearing its cache.
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn reset_renderer() {
     RENDERER.write().clear();
 }
