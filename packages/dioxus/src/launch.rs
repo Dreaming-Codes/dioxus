@@ -350,7 +350,8 @@ impl LaunchBuilder {
             return dioxus_desktop::launch::launch(app, contexts, configs);
         }
 
-        #[cfg(feature = "server")]
+        // On wasm32 the host (e.g. a JS runtime) owns the socket, so there is no server to launch.
+        #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
         if matches!(platform, KnownPlatform::Server) {
             return dioxus_server::launch_cfg(app, contexts, configs);
         }

@@ -24,7 +24,7 @@ pub mod redirect;
 mod launch;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use launch::{launch, launch_cfg};
+pub use launch::{launch, launch_cfg, router, serve};
 
 /// Implementations of the server side of the server function call.
 pub mod server;
@@ -37,9 +37,6 @@ pub(crate) mod document;
 pub(crate) mod ssr;
 pub(crate) mod streaming;
 
-pub use launch::router;
-pub use launch::serve;
-
 pub mod serverfn;
 pub use serverfn::*;
 
@@ -47,4 +44,4 @@ pub mod isrg;
 pub use isrg::*;
 
 mod index_html;
-pub(crate) use index_html::IndexHtml;
+pub use index_html::IndexHtml;

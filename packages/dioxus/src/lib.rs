@@ -85,7 +85,7 @@ pub use dioxus_cli_config as cli_config;
 #[cfg_attr(docsrs, doc(cfg(feature = "server")))]
 pub use dioxus_server as server;
 
-#[cfg(feature = "server")]
+#[cfg(all(feature = "server", not(target_arch = "wasm32")))]
 pub use dioxus_server::serve;
 
 #[cfg(feature = "devtools")]
@@ -179,7 +179,12 @@ pub mod prelude {
     #[cfg(feature = "server")]
     #[cfg_attr(docsrs, doc(cfg(feature = "server")))]
     #[doc(inline)]
-    pub use dioxus_server::{self, DioxusRouterExt, ServeConfig, ServerFunction, serve};
+    pub use dioxus_server::{self, DioxusRouterExt, ServeConfig, ServerFunction};
+
+    #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "server")))]
+    #[doc(inline)]
+    pub use dioxus_server::serve;
 
     #[cfg(feature = "router")]
     #[cfg_attr(docsrs, doc(cfg(feature = "router")))]
