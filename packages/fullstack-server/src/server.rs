@@ -9,11 +9,11 @@ use axum::{
     response::{IntoResponse, Response},
     routing::*,
 };
+use dioxus_fullstack_core::rt::LocalRt;
 use dioxus_vdom::{ComponentFunction, VirtualDom};
 use http::header::*;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio_util::task::LocalPoolHandle;
 use tower::ServiceExt;
 use tower::util::MapResponse;
 use tower_http::services::fs::ServeFileSystemResponseBody;
@@ -218,7 +218,7 @@ pub struct FullstackState {
     config: ServeConfig,
     build_virtual_dom: Arc<dyn Fn() -> VirtualDom + Send + Sync>,
     renderers: Arc<SsrRendererPool>,
-    pub(crate) rt: LocalPoolHandle,
+    pub(crate) rt: LocalRt,
 }
 
 impl FullstackState {
@@ -226,11 +226,7 @@ impl FullstackState {
     ///
     /// This won't render pages, but can still be used to register server functions and serve static assets.
     pub fn headless() -> Self {
-        let rt = LocalPoolHandle::new(
-            std::thread::available_parallelism()
-                .map(usize::from)
-                .unwrap_or(1),
-        );
+        let rt = LocalRt::new();
 
         Self {
             renderers: Arc::new(SsrRendererPool::new(4, None)),
@@ -247,11 +243,7 @@ impl FullstackState {
         config: ServeConfig,
         root: impl ComponentFunction<(), M> + Send + Sync + 'static,
     ) -> Self {
-        let rt = LocalPoolHandle::new(
-            std::thread::available_parallelism()
-                .map(usize::from)
-                .unwrap_or(1),
-        );
+        let rt = LocalRt::new();
 
         Self {
             renderers: Arc::new(SsrRendererPool::new(4, config.incremental.clone())),
@@ -267,11 +259,7 @@ impl FullstackState {
         config: ServeConfig,
         build_virtual_dom: impl Fn() -> VirtualDom + Send + Sync + 'static,
     ) -> Self {
-        let rt = LocalPoolHandle::new(
-            std::thread::available_parallelism()
-                .map(usize::from)
-                .unwrap_or(1),
-        );
+        let rt = LocalRt::new();
 
         Self {
             renderers: Arc::new(SsrRendererPool::new(4, config.incremental.clone())),

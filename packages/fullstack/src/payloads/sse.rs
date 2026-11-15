@@ -259,9 +259,9 @@ pub use server_impl::*;
 #[cfg(feature = "server")]
 mod server_impl {
     use super::*;
-    use crate::spawn_platform;
     use axum::response::sse::Sse;
     use axum_core::response::IntoResponse;
+    use dioxus_fullstack_core::rt::spawn_pinned;
     use futures::Future;
     use futures::SinkExt;
     use futures::{Sink, TryStream};
@@ -284,7 +284,7 @@ mod server_impl {
             };
 
             // Spawn the user function in the background
-            spawn_platform(move || f(tx));
+            spawn_pinned(move || f(tx));
 
             // Create the stream of events, mapping the incoming events to `Ok`
             // If the user function ends, the stream will end and the connection will be closed

@@ -139,7 +139,7 @@ impl<T: 'static + Send, E> Streaming<T, E> {
     {
         let (tx, rx) = futures_channel::mpsc::unbounded();
 
-        crate::spawn_platform(move || callback(tx));
+        dioxus_fullstack_core::rt::spawn_pinned(move || callback(tx));
 
         Self::new(rx)
     }

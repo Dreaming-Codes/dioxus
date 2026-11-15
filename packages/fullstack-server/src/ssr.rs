@@ -5,6 +5,7 @@ use crate::isrg::{
 };
 use crate::streaming::{Mount, StreamingRenderer};
 use crate::{ServeConfig, document::ServerDocument};
+use dioxus_fullstack_core::rt::{LocalRt, LocalTask};
 use dioxus_fullstack_core::{FullstackContext, StreamingStatus};
 use dioxus_fullstack_core::{HttpError, ServerFnError, history::provide_fullstack_history_context};
 use dioxus_fullstack_core::{HydrationContext, SerializedHydrationData};
@@ -24,7 +25,6 @@ use std::{
     rc::Rc,
     sync::{Arc, RwLock},
 };
-use tokio_util::task::LocalPoolHandle;
 
 use crate::StreamingMode;
 
@@ -97,7 +97,7 @@ impl SsrRendererPool {
         self: Arc<Self>,
         parts: Parts,
         cfg: &ServeConfig,
-        rt: &LocalPoolHandle,
+        rt: &LocalRt,
         virtual_dom_factory: F,
     ) -> Result<
         (
@@ -110,7 +110,7 @@ impl SsrRendererPool {
     > {
         struct ReceiverWithDrop {
             receiver: futures_channel::mpsc::Receiver<Result<String, IncrementalRendererError>>,
-            cancel_task: Option<tokio::task::JoinHandle<()>>,
+            cancel_task: Option<LocalTask<()>>,
         }
 
         impl Stream for ReceiverWithDrop {

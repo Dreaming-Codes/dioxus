@@ -567,7 +567,7 @@ impl WebSocketOptions {
                 }
             })
             .on_upgrade(|socket| {
-                let res = crate::spawn_platform(move || {
+                let res = dioxus_fullstack_core::rt::spawn_pinned(move || {
                     callback(TypedWebsocket {
                         _in: PhantomData,
                         _out: PhantomData,

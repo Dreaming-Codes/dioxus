@@ -27,11 +27,6 @@ pub use xxhash_rust;
 #[cfg(feature = "server")]
 pub use {axum, axum_extra::TypedHeader, inventory};
 
-#[cfg(feature = "server")]
-pub(crate) mod spawn;
-#[cfg(feature = "server")]
-pub(crate) use spawn::*;
-
 pub mod magic;
 pub use magic::*;
 

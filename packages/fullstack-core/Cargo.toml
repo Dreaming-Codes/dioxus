@@ -32,9 +32,15 @@ futures-util = { workspace = true, features = ["std"] }
 tokio = { workspace = true, features = ["rt"] }
 parking_lot = { workspace = true }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio-util = { workspace = true, features = ["rt"], optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = { workspace = true, optional = true }
+
 [features]
 web = []
-server = []
+server = ["dep:tokio-util", "dep:wasm-bindgen-futures"]
 
 [dev-dependencies]
 dioxus-fullstack = { workspace = true }
