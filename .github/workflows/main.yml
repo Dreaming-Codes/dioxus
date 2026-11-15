@@ -459,6 +459,44 @@ jobs:
       - uses: browser-actions/setup-firefox@latest
       - run: cargo test --lib --bins --tests --examples --workspace --exclude dioxus-desktop --profile release-unoptimized
 
+  # Fullstack servers on wasm32 JS hosts (Workers runtimes, Deno, node): the host owns the socket
+  # and hands requests to the axum router. A compile check alone misses executor regressions
+  # (thread pools and tokio's `spawn_local` compile for wasm32 but panic on the first request),
+  # so the last step serves SSR and a server function under node.
+  wasm32-server:
+    needs: rust
+    if: github.event.pull_request.draft == false && needs.rust.outputs.rust == 'true'
+    name: "Check | wasm32 server"
+    runs-on: warp-ubuntu-latest-x64-8x
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ needs.rust.outputs.rust_stable }}
+          targets: wasm32-unknown-unknown
+      - uses: ./.github/actions/rust-cache
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: cargo-bins/cargo-binstall@main
+      - name: Install wasm-bindgen-test-runner
+        run: cargo binstall wasm-bindgen-cli --version "$(cargo pkgid wasm-bindgen | sed 's/.*@//')" -y --force --locked
+      - name: Compile dioxus server for wasm32
+        run: cargo check --locked -p dioxus --no-default-features --features fullstack,server,router --target wasm32-unknown-unknown
+      # `-e normal,build`: dioxus's own dev-dependencies (tokio "full") are not part of a server build.
+      - name: No native networking on wasm32
+        run: |
+          ! cargo tree --locked -p dioxus --no-default-features --features fullstack,server,router \
+              --target wasm32-unknown-unknown -e normal,build -i mio 2>/dev/null | grep -q mio
+      - name: Native client builds stay without axum ws
+        run: |
+          ! cargo tree --locked -p dioxus --no-default-features --features fullstack,desktop \
+              -e features -i axum | grep -q 'axum feature "ws"'
+      - name: SSR + server fn on a JS host (node)
+        env:
+          CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+        run: cargo test --locked -p dioxus-server --features server --target wasm32-unknown-unknown --test wasm32_host
+
   matrix_test:
     needs: rust
     runs-on: ${{ matrix.platform.os }}

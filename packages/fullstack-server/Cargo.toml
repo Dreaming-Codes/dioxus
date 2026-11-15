@@ -86,7 +86,13 @@ tower-layer = { version = "0.3.3", optional = true }
 
 [dev-dependencies]
 dioxus = { workspace = true, features = ["fullstack"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+dioxus = { workspace = true, features = ["fullstack", "server"] }
+wasm-bindgen-test = { workspace = true }
 
 [features]
 default = ["router", "document"]
