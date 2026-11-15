@@ -44,7 +44,7 @@ form_urlencoded = { workspace = true }
 axum = { workspace = true, default-features = false, features = ["json", "form", "query", "multipart", "query"] }
 http-body = { workspace = true }
 headers = "0.4.1"
-dioxus-asset-resolver = { workspace = true, features = ["native"] }
+dioxus-asset-resolver = { workspace = true }
 
 const_format = { workspace = true, default-features = true }
 const-str = { workspace = true, default-features = true }
@@ -61,7 +61,7 @@ inventory = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 tokio-stream = { workspace = true, features = ["sync"], optional = true }
 tower = { workspace = true, features = ["util"], optional = true }
-tower-http = { workspace = true, features = ["fs", "limit"], optional = true }
+tower-http = { workspace = true, features = ["limit"], optional = true }
 tower-layer = { version = "0.3.3", optional = true }
 
 # payloads
@@ -81,6 +81,11 @@ content_disposition = "0.4.0"
 
 # native websocket deps
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# Same package as the shared `axum` above, enabled only by `server`: client-only native builds
+# (desktop, mobile) stay without ws/tokio, and wasm32 servers never see them (tokio/net pulls mio).
+axum = { workspace = true, optional = true, default-features = false, features = ["ws", "tokio"] }
+# The native resolver reads from disk with `spawn_blocking`; wasm32 has no filesystem or tokio runtime.
+dioxus-asset-resolver = { workspace = true, features = ["native"] }
 tokio-tungstenite = { workspace = true, optional = true }
 tungstenite = { workspace = true, optional = true }
 rustls = { workspace = true }
@@ -108,8 +113,7 @@ server = [
     "dep:tower-http",
     "dep:tower-layer",
     "dep:axum-extra",
-    "axum/ws",
-    "axum/tokio",
+    "dep:axum",
 ]
 postcard = ["dep:postcard"]
 msgpack = ["dep:rmp-serde"]

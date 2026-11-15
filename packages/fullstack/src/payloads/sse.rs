@@ -1,9 +1,8 @@
 use crate::{ClientResponse, FromResponse, RequestError, ServerFnError};
+#[cfg(all(feature = "server", not(target_arch = "wasm32")))]
+use axum::response::sse::KeepAlive;
 #[cfg(feature = "server")]
-use axum::{
-    BoxError,
-    response::sse::{Event, KeepAlive},
-};
+use axum::{BoxError, response::sse::Event};
 use futures::Stream;
 use futures::io::AsyncBufReadExt;
 use futures::{StreamExt, TryStreamExt};
@@ -24,7 +23,8 @@ pub struct ServerEvents<T> {
     // The receiving end from the server
     client: Option<Pin<Box<dyn Stream<Item = Result<ServerSentEvent, ServerFnError>>>>>,
 
-    #[cfg(feature = "server")]
+    // axum's keep-alive timer needs tokio's time driver, which wasm32 hosts do not run.
+    #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
     keep_alive: Option<KeepAlive>,
 
     // The actual SSE response to send to the client
@@ -160,7 +160,7 @@ impl<T> FromResponse for ServerEvents<T> {
             _marker: std::marker::PhantomData,
             client: Some(stream),
 
-            #[cfg(feature = "server")]
+            #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
             keep_alive: None,
 
             #[cfg(feature = "server")]
@@ -301,6 +301,7 @@ mod server_impl {
             Self {
                 _marker: std::marker::PhantomData,
                 client: None,
+                #[cfg(not(target_arch = "wasm32"))]
                 keep_alive: Some(KeepAlive::new().interval(Duration::from_secs(15))),
                 sse: Some(sse),
             }
@@ -321,6 +322,7 @@ mod server_impl {
             Self {
                 _marker: std::marker::PhantomData,
                 client: None,
+                #[cfg(not(target_arch = "wasm32"))]
                 keep_alive: Some(KeepAlive::new().interval(Duration::from_secs(15))),
                 sse: Some(sse),
             }
@@ -329,6 +331,9 @@ mod server_impl {
         /// Set the keep-alive configuration for the SSE connection.
         ///
         /// A `None` value will disable the default `KeepAlive` of 15 seconds.
+        ///
+        /// Not available on wasm32, where events are sent without keep-alive comments.
+        #[cfg(not(target_arch = "wasm32"))]
         pub fn with_keep_alive(mut self, keep_alive: Option<KeepAlive>) -> Self {
             self.keep_alive = keep_alive;
             self
@@ -342,6 +347,7 @@ mod server_impl {
             Self {
                 _marker: std::marker::PhantomData,
                 client: None,
+                #[cfg(not(target_arch = "wasm32"))]
                 keep_alive: None,
                 sse: Some(sse),
             }
@@ -354,11 +360,12 @@ mod server_impl {
                 .sse
                 .expect("SSE should be initialized before using it as a response");
 
+            #[cfg(not(target_arch = "wasm32"))]
             if let Some(keep_alive) = self.keep_alive {
-                sse.keep_alive(keep_alive).into_response()
-            } else {
-                sse.into_response()
+                return sse.keep_alive(keep_alive).into_response();
             }
+
+            sse.into_response()
         }
     }
 

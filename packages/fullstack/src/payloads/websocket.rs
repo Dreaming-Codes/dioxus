@@ -515,9 +515,9 @@ impl<I, O, E> FromResponse<UpgradingWebsocket> for Websocket<I, O, E> {
 pub struct WebSocketOptions {
     protocols: Vec<String>,
     automatic_reconnect: bool,
-    #[cfg(feature = "server")]
+    #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
     upgrade: Option<axum::extract::ws::WebSocketUpgrade>,
-    #[cfg(feature = "server")]
+    #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
     on_failed_upgrade: Option<Box<dyn FnOnce(axum::Error) + Send + 'static>>,
 }
 
@@ -527,10 +527,10 @@ impl WebSocketOptions {
             protocols: Vec::new(),
             automatic_reconnect: false,
 
-            #[cfg(feature = "server")]
+            #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
             upgrade: None,
 
-            #[cfg(feature = "server")]
+            #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
             on_failed_upgrade: None,
         }
     }
@@ -541,7 +541,7 @@ impl WebSocketOptions {
         self
     }
 
-    #[cfg(feature = "server")]
+    #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
     pub fn on_failed_upgrade(
         mut self,
         callback: impl FnOnce(axum::Error) + Send + 'static,
@@ -551,7 +551,7 @@ impl WebSocketOptions {
         self
     }
 
-    #[cfg(feature = "server")]
+    #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
     pub fn on_upgrade<F, Fut, In, Out, Enc>(mut self, callback: F) -> Websocket<In, Out, Enc>
     where
         F: FnOnce(TypedWebsocket<In, Out, Enc>) -> Fut + Send + 'static,
@@ -667,10 +667,10 @@ impl<S: Send> FromRequest<S> for WebSocketOptions {
         _req: Request,
         _: &S,
     ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
-        #[cfg(not(feature = "server"))]
+        #[cfg(not(all(feature = "server", not(target_arch = "wasm32"))))]
         return async move { Err(StatusCode::NOT_IMPLEMENTED.into_response()) };
 
-        #[cfg(feature = "server")]
+        #[cfg(all(feature = "server", not(target_arch = "wasm32")))]
         async move {
             let ws = match axum::extract::ws::WebSocketUpgrade::from_request(_req, &()).await {
                 Ok(ws) => ws,
@@ -701,7 +701,7 @@ pub struct UpgradingWebsocket {
 unsafe impl Send for UpgradingWebsocket {}
 unsafe impl Sync for UpgradingWebsocket {}
 
-#[cfg(feature = "server")]
+#[cfg(all(feature = "server", not(target_arch = "wasm32")))]
 pub struct TypedWebsocket<In, Out, E = JsonEncoding> {
     _in: std::marker::PhantomData<fn() -> In>,
     _out: std::marker::PhantomData<fn() -> Out>,
@@ -710,7 +710,7 @@ pub struct TypedWebsocket<In, Out, E = JsonEncoding> {
     inner: axum::extract::ws::WebSocket,
 }
 
-#[cfg(feature = "server")]
+#[cfg(all(feature = "server", not(target_arch = "wasm32")))]
 impl<In: DeserializeOwned, Out: Serialize, E: Encoding> TypedWebsocket<In, Out, E> {
     /// Receive an incoming message from the client.
     pub async fn recv(&mut self) -> Result<In, WebsocketError> {
@@ -781,7 +781,7 @@ impl<In: DeserializeOwned, Out: Serialize, E: Encoding> TypedWebsocket<In, Out, 
     }
 }
 
-#[cfg(feature = "server")]
+#[cfg(all(feature = "server", not(target_arch = "wasm32")))]
 impl<In: DeserializeOwned, Out: Serialize, E: Encoding> Stream for TypedWebsocket<In, Out, E> {
     type Item = Result<In, WebsocketError>;
 
@@ -823,7 +823,7 @@ impl<In: DeserializeOwned, Out: Serialize, E: Encoding> Stream for TypedWebsocke
     }
 }
 
-#[cfg(feature = "server")]
+#[cfg(all(feature = "server", not(target_arch = "wasm32")))]
 impl<In: DeserializeOwned, Out: Serialize, E: Encoding> Sink<Out> for TypedWebsocket<In, Out, E> {
     type Error = WebsocketError;
 

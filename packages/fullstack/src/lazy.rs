@@ -1,7 +1,9 @@
 #![allow(clippy::needless_return)]
 
 use dioxus_vdom::CapturedError;
-use std::{hint::black_box, prelude::rust_2024::Future, sync::atomic::AtomicBool};
+use std::sync::atomic::AtomicBool;
+#[cfg(not(all(feature = "server", target_arch = "wasm32")))]
+use std::{hint::black_box, prelude::rust_2024::Future};
 
 /// `Lazy` is a thread-safe, lazily-initialized global variable.
 ///
@@ -33,6 +35,11 @@ impl<T: Send + Sync + 'static> Lazy<T> {
         }
     }
 
+    /// Create a `Lazy` whose value is built by running `constructor` to completion on first access.
+    ///
+    /// Not available for wasm32 servers: blocking on a future needs a thread to run it on. Use
+    /// [`Lazy::lazy`] and [`Lazy::set`] there instead.
+    #[cfg(not(all(feature = "server", target_arch = "wasm32")))]
     pub const fn new<F, G, E>(constructor: F) -> Self
     where
         F: Fn() -> G + Copy,
@@ -130,6 +137,7 @@ impl<T: std::fmt::Debug + Send + Sync + 'static> std::fmt::Debug for Lazy<T> {
 ///
 /// We call the `rust-call` method of the zero-sized constructor function. This is safe because we're
 /// not actually dereferencing any unsafe data, just calling its vtable entry to get the future.
+#[cfg(not(all(feature = "server", target_arch = "wasm32")))]
 fn blocking_initialize<T, F, G, E>() -> Result<T, CapturedError>
 where
     T: Send + Sync + 'static,
